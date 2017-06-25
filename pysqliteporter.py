@@ -45,11 +45,13 @@ class PySqlitePorter:
             for other_sql in json_content['structure']['otherSQL']:
 
                 if re.match('CREATE INDEX', other_sql):
+
                     create_index_sql = ''.join([
                         other_sql,
                         self._separator
                     ])
                 else:
+
                     main_sql = ''.join([
                         main_sql,
                         other_sql,
@@ -70,6 +72,7 @@ class PySqlitePorter:
                 for row in json_content['data']['inserts'][table_name]:
 
                     if count == batch_insert_size:
+
                         main_sql = ''.join([
                             main_sql,
                             self._separator
@@ -79,11 +82,45 @@ class PySqlitePorter:
                     values = []
 
                     for column, v_data in row:
+
                         fields.append(column)
                         values.append(
-                            sanitise_for_sql(v_data)
+                            self.sanitise_for_sql(v_data)
                         )
 
-                    # TODO
-                    # implement/rewrite sanitise_for_sql method
-                    # continue rewrite JSON export method
+                    if count == 0:
+
+                        main_sql = ''.join([
+                            main_sql,
+                            'INSERT OR REPLACE INTO ',
+                            self._sql_escape(table_name),
+                            ' SELECT'
+                        ])
+
+                        for e_field in fields:
+
+                            if values[e_field] is None:
+
+                                main_sql = ''.join([
+                                    main_sql,
+                                    ' NULL AS \'',
+                                    e_field,
+                                    '\''
+                                ])
+                            else:
+
+                                main_sql = ''.join([
+                                    main_sql,
+                                    ' \'',
+                                    ''
+                                ])
+
+    def sanitise_for_sql(self, value):
+
+        if value is None:
+            return None
+
+        sanit_re = re.compile('([^\']|$')
+
+        return sanit_re.match(value)
+
